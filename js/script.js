@@ -107,6 +107,26 @@ function buildDatasetSearchText(record) {
     .toLowerCase();
 }
 
+function getNormalizedToken(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getFcBadgeClass(fc) {
+  var token = getNormalizedToken(fc);
+  if (!token) return "badge-fc badge-fc-default";
+  return "badge-fc badge-fc-" + token;
+}
+
+function getTagBadgeClass(tag) {
+  var token = getNormalizedToken(tag);
+  if (!token) return "badge-tag badge-tag-default";
+  return "badge-tag badge-tag-" + token.replace(/_synth/g, "");
+}
+
 function getLdDescByInst(inst) {
   var value = String(inst || "").trim();
   if (!value) return "";
@@ -3659,12 +3679,12 @@ function renderDatasetTable(records) {
       "<td>" +
       esc(r.DAName || "") +
       "</td>" +
-      '<td><span style="background:#164e63;padding:2px 7px;border-radius:5px;font-size:11px">' +
-      esc(r.fc || "") +
-      "</span></td>" +
-      '<td><span style="background:#1e3a5f;padding:2px 7px;border-radius:5px;font-size:11px">' +
-      esc(r.Tag) +
-      "</span></td>" +
+        '<td><span class="dataset-badge ' + getFcBadgeClass(r.fc) + '">' +
+        esc(r.fc || "") +
+        "</span></td>" +
+        '<td><span class="dataset-badge ' + getTagBadgeClass(r.Tag) + '">' +
+        esc(r.Tag) +
+        "</span></td>" +
       '<td style="color:#34d399;font-weight:700;font-family:monospace">' +
       esc(r.CONCAT || "") +
       "</td>" +
