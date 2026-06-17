@@ -392,9 +392,6 @@ tbody tr:hover {
 }
 #ds-table thead {
   background: linear-gradient(180deg, #15803d 0%, #166534 100%);
-  position: sticky;
-  top: 0;
-  z-index: 15;
 }
 #ds-table thead th {
   padding: 10px 10px;
