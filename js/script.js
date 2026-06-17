@@ -18,6 +18,8 @@ var datasetSelectedOrder = [];
 var datasetDisplayRecords = [];
 var treeSelectedOrder = [];
 var datasetFilterTimer = null;
+var localNameCache = typeof WeakMap !== "undefined" ? new WeakMap() : null;
+var datasetRenderToken = 0;
 
 function setStatus(msg) {
   var el = document.getElementById("status");
@@ -437,10 +439,26 @@ function buildSelectionCidDescription(node, fields, attrs, ctx) {
 function findAllByLocalName(root, name) {
   var result = [];
   if (!root || !name) return result;
+  var cacheKey = String(name || "");
+  if (localNameCache) {
+    var cachedByRoot = localNameCache.get(root);
+    if (cachedByRoot && cachedByRoot[cacheKey]) return cachedByRoot[cacheKey];
+  }
+
   var nodes = root.getElementsByTagName("*");
   for (var i = 0; i < nodes.length; i++) {
-    if (localName(nodes[i]) === name) result.push(nodes[i]);
+    if (localName(nodes[i]) === cacheKey) result.push(nodes[i]);
   }
+
+  if (localNameCache) {
+    var rootCache = localNameCache.get(root);
+    if (!rootCache) {
+      rootCache = {};
+      localNameCache.set(root, rootCache);
+    }
+    rootCache[cacheKey] = result;
+  }
+
   return result;
 }
 
@@ -3635,6 +3653,7 @@ function createDatasetKey(index, record) {
 }
 
 function renderDatasetTable(records) {
+  var token = ++datasetRenderToken;
   datasetDisplayRecords = records;
   var badge = document.getElementById("ds-badge");
   if (badge) badge.textContent = records.length;
@@ -3645,53 +3664,69 @@ function renderDatasetTable(records) {
       '<tr><td colspan="12" style="color:#64748b;text-align:center;padding:20px">Sin registros</td></tr>';
     return;
   }
-  var html = "";
-  records.forEach(function (r) {
-    html += "<tr>" +
-      "<td>" +
-      esc(r.IED) +
-      "</td>" +
-      "<td>" +
-      esc(r.LDInst) +
-      "</td>" +
-      "<td>" +
-      esc(r.Prefix) +
-      "</td>" +
-      "<td><b>" +
-      esc(r.LNClass) +
-      "</b></td>" +
-      "<td>" +
-      esc(r.LNInst) +
-      "</td>" +
-      '<td style="color:#cbd5e1;font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis" title="' +
-      esc(r.lnClassCID || "") +
-      '">' +
-      esc(r.lnClassCID || "") +
-      "</td>" +
-      "<td>" +
-      esc(r.DOName) +
-      "</td>" +
-      '<td style="color:#c4b5fd;font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis" title="' +
-      esc(r.DAType || "") +
-      '">' +
-      esc(r.DAType || "") +
-      "</td>" +
-      "<td>" +
-      esc(r.DAName || "") +
-      "</td>" +
+  tbody.innerHTML = "";
+
+  var batchSize = 250;
+  var index = 0;
+
+  function appendBatch() {
+    if (token !== datasetRenderToken) return;
+    var html = "";
+    var end = Math.min(index + batchSize, records.length);
+    for (; index < end; index++) {
+      var r = records[index];
+      html += "<tr>" +
+        "<td>" +
+        esc(r.IED) +
+        "</td>" +
+        "<td>" +
+        esc(r.LDInst) +
+        "</td>" +
+        "<td>" +
+        esc(r.Prefix) +
+        "</td>" +
+        "<td><b>" +
+        esc(r.LNClass) +
+        "</b></td>" +
+        "<td>" +
+        esc(r.LNInst) +
+        "</td>" +
+        '<td style="color:#cbd5e1;font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis" title="' +
+        esc(r.lnClassCID || "") +
+        '">' +
+        esc(r.lnClassCID || "") +
+        "</td>" +
+        "<td>" +
+        esc(r.DOName) +
+        "</td>" +
+        '<td style="color:#c4b5fd;font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis" title="' +
+        esc(r.DAType || "") +
+        '">' +
+        esc(r.DAType || "") +
+        "</td>" +
+        "<td>" +
+        esc(r.DAName || "") +
+        "</td>" +
         '<td><span class="dataset-badge ' + getFcBadgeClass(r.fc) + '">' +
         esc(r.fc || "") +
         "</span></td>" +
         '<td><span class="dataset-badge ' + getTagBadgeClass(r.Tag) + '">' +
         esc(r.Tag) +
         "</span></td>" +
-      '<td style="color:#34d399;font-weight:700;font-family:monospace">' +
-      esc(r.CONCAT || "") +
-      "</td>" +
-      "</tr>";
-  });
-  tbody.innerHTML = html;
-  updateSelectedCount();
+        '<td style="color:#34d399;font-weight:700;font-family:monospace">' +
+        esc(r.CONCAT || "") +
+        "</td>" +
+        "</tr>";
+    }
+    tbody.insertAdjacentHTML("beforeend", html);
+    if (index < records.length) {
+      requestAnimationFrame(appendBatch);
+    } else {
+      updateSelectedCount();
+    }
+  }
+
+  requestAnimationFrame(appendBatch);
 }
 
 
