@@ -4047,7 +4047,13 @@ function updateDatasetSelectionDisplay() {
     listDiv.innerHTML = '<div style="color: #64748b; text-align: center; padding: 20px;">Selecciona registros en el Dataset para verlos aquí</div>';
     return;
   }
-  
+
+  var headerHtml = '';
+  headerHtml += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 8px 10px;border-bottom:1px solid #1e3a2f;margin-bottom:8px;">';
+  headerHtml += '<span style="color:#cbd5e1;font-size:11px;font-weight:700;letter-spacing:0.03em;">Seleccionados: ' + selectedKeys.length + '</span>';
+  headerHtml += '<button type="button" onclick="clearAllDatasetSelections()" style="background:#b91c1c;border:none;color:white;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;flex-shrink:0;">Eliminar todo</button>';
+  headerHtml += '</div>';
+
   var html = "";
   selectedKeys.forEach(function (key) {
     var record = datasetSelectedRecords[key];
@@ -4058,7 +4064,7 @@ function updateDatasetSelectionDisplay() {
     html += '<button type="button" class="dataset-row-remove" data-key="' + esc(encodeURIComponent(key)) + '" style="background: #dc2626; border: none; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; margin-left: 4px; flex-shrink: 0;">✕</button>';
     html += '</div>';
   });
-  listDiv.innerHTML = html;
+  listDiv.innerHTML = headerHtml + html;
 
   var removeButtons = listDiv.querySelectorAll(".dataset-row-remove");
   removeButtons.forEach(function (btn) {
@@ -4069,6 +4075,39 @@ function updateDatasetSelectionDisplay() {
       removeDatasetSelection(decodeURIComponent(key));
     });
   });
+}
+
+function clearAllDatasetSelections() {
+  var keys = datasetSelectedOrder.slice();
+  var tbody = document.getElementById("ds-tbody");
+
+  keys.forEach(function (key) {
+    var nodeId = "fcda_auto_" + key;
+    if (treeSelectedNodes[nodeId]) {
+      delete treeSelectedNodes[nodeId];
+      var nodeOrderIdx = treeSelectedOrder.indexOf(nodeId);
+      if (nodeOrderIdx !== -1) treeSelectedOrder.splice(nodeOrderIdx, 1);
+    }
+  });
+
+  datasetSelectedRecords = {};
+  datasetSelectedOrder = [];
+
+  if (tbody) {
+    tbody.querySelectorAll(".row-checkbox").forEach(function (chk) {
+      chk.checked = false;
+      var tr = chk.closest("tr");
+      if (tr) tr.classList.remove("row-selected");
+    });
+  }
+
+  var chkAll = document.getElementById("chk-all-rows");
+  if (chkAll) chkAll.checked = false;
+
+  updateDatasetSelectionDisplay();
+  updateTreeSelectionDisplay();
+  updateSelectedCount();
+  setStatus("Se eliminaron todas las filas seleccionadas del dataset.");
 }
 
 function removeDatasetSelection(key) {
