@@ -135,19 +135,19 @@
                   id="ds-search"
                   type="text"
                   placeholder="🔍 Buscar..."
-                  oninput="filterDataset()"
+                  oninput="requestDatasetFilter()"
                   class="dataset-filter-input"
                 />
                 <select
                   id="ds-filter-ied"
-                  onchange="filterDataset()"
+                  onchange="requestDatasetFilter()"
                   class="dataset-filter-select dataset-filter-select-ied"
                 >
                   <option value="">— Todos los IED —</option>
                 </select>
                 <select
                   id="ds-filter-ds"
-                  onchange="filterDataset()"
+                  onchange="requestDatasetFilter()"
                   class="dataset-filter-select dataset-filter-select-ds"
                 >
                   <option value="">— Todos los DataSet —</option>

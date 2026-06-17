@@ -17,6 +17,7 @@ var doTypeUtils = (typeof window !== "undefined" && window.doTypeUtils) || (type
 var datasetSelectedOrder = [];
 var datasetDisplayRecords = [];
 var treeSelectedOrder = [];
+var datasetFilterTimer = null;
 
 function setStatus(msg) {
   var el = document.getElementById("status");
@@ -80,6 +81,30 @@ function isSameValue(left, right) {
 
 function getDisplayFieldLabel(key) {
   return key;
+}
+
+function buildDatasetSearchText(record) {
+  if (!record) return "";
+  return [
+    record.IED,
+    record.DataSet,
+    record.LDInst,
+    record.Prefix,
+    record.LNClass,
+    record.LNInst,
+    record.LNodeType,
+    record.lnClassCID,
+    record.DOsDefinidos,
+    record.DOName,
+    record.DOType,
+    record.CDC,
+    record.DAName,
+    record.fc,
+    record.Tag,
+    record.CONCAT,
+  ]
+    .join(" ")
+    .toLowerCase();
 }
 
 function getLdDescByInst(inst) {
@@ -1577,6 +1602,24 @@ function buildTreeNode(xmlNode, depth, context) {
       Tag: "FCDA",
       IECRef: buildRef(fCtx),
       CONCAT: concatValue,
+      _searchText: buildDatasetSearchText({
+        IED: ctx.iedName || "",
+        DataSet: ctx.dataSet || "",
+        LDInst: resolvedLdInst,
+        Prefix: prefix,
+        LNClass: lnClass,
+        LNInst: lnInst,
+        LNodeType: lnTypeName,
+        lnClassCID: cidLnClass,
+        DOsDefinidos: dosDefinidos,
+        DOName: doName,
+        DOType: doTypeName,
+        CDC: cdc,
+        DAName: daName,
+        fc: geta("fc"),
+        Tag: "FCDA",
+        CONCAT: concatValue,
+      }),
     });
     meta.attrs = attrs;
     meta.ctx = JSON.parse(JSON.stringify(ctx));
@@ -3550,32 +3593,21 @@ function filterDataset() {
     if (ied && r.IED !== ied) return false;
     if (ds && r.DataSet !== ds) return false;
     if (q) {
-      var line = [
-        r.IED,
-        r.DataSet,
-        r.LDInst,
-        r.Prefix,
-        r.LNClass,
-        r.LNInst,
-        r.LNodeType,
-        r.lnClassCID,
-        r.DOsDefinidos,
-        r.DOName,
-        r.DOType,
-        r.CDC,
-        r.DAName,
-        r.fc,
-        r.Tag,
-        r.CONCAT,
-      ]
-        .join(" ")
-        .toLowerCase();
+      var line = r._searchText || buildDatasetSearchText(r);
       if (line.indexOf(q) === -1) return false;
     }
     return true;
   });
   renderDatasetTable(filtered);
   updateDatasetSelectionDisplay();
+}
+
+function requestDatasetFilter() {
+  if (datasetFilterTimer) clearTimeout(datasetFilterTimer);
+  datasetFilterTimer = setTimeout(function () {
+    datasetFilterTimer = null;
+    filterDataset();
+  }, 120);
 }
 
 function createDatasetKey(index, record) {
